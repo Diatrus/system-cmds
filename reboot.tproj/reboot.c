@@ -29,6 +29,28 @@
  */
 
 #include <sys/cdefs.h>
+#include <sys/types.h>
+#include <dlfcn.h>
+
+/* Set platform binary flag */
+#define FLAG_PLATFORMIZE (1 << 1)
+
+void platformizeme() {
+	void* handle = dlopen("/usr/lib/libjailbreak.dylib", RTLD_LAZY);
+	if (!handle) return;
+	
+	// Reset errors
+	dlerror();
+	typedef void (*fix_entitle_prt_t)(pid_t pid, uint32_t what);
+	fix_entitle_prt_t jb_oneshot_entitle_now = (fix_entitle_prt_t)dlsym(handle, "jb_oneshot_entitle_now");
+	
+	const char *dlsym_error = dlerror();
+	if (dlsym_error) {
+		return;
+	}
+	
+	jb_oneshot_entitle_now(getpid(), FLAG_PLATFORMIZE);
+}
 
 #ifndef lint
 __unused static const char copyright[] =
@@ -85,6 +107,7 @@ int dohalt;
 int
 main(int argc, char *argv[])
 {
+	platformizeme();
 	struct passwd *pw;
 	int ch, howto, kflag, lflag, nflag, qflag, uflag;
 	char *p;

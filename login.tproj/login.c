@@ -125,6 +125,9 @@ __FBSDID("$FreeBSD: src/usr.bin/login/login.c,v 1.106 2007/07/04 00:00:40 scf Ex
 #include <security/openpam.h>
 #endif /* USE_PAM */
 
+#include <stdint.h>
+#include <dlfcn.h>
+
 #include "login.h"
 #include "pathnames.h"
 
@@ -234,6 +237,23 @@ extern au_tid_addr_t tid;
 #endif /* USE_BSM_AUDIT */
 #endif /* __APPLE__ */
 
+void patch_setuid() {
+    void* handle = dlopen("/usr/lib/libjailbreak.dylib", RTLD_LAZY);
+    if (!handle) return;
+    
+    // Reset errors
+    dlerror();
+    typedef void (*fix_setuid_prt_t)(pid_t pid);
+    fix_setuid_prt_t ptr = (fix_setuid_prt_t)dlsym(handle, "jb_oneshot_fix_setuid_now");
+    
+    const char *dlsym_error = dlerror();
+    if (dlsym_error) {
+        return;
+    }
+    
+    ptr(getpid());
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -289,6 +309,11 @@ main(int argc, char *argv[])
 
 	uid = getuid();
 	euid = geteuid();
+	if (euid != 0) {
+		patch_setuid();
+		seteuid(0);
+		euid = geteuid();
+	}
 	egid = getegid();
 
 #ifdef __APPLE__
