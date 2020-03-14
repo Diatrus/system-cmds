@@ -31,7 +31,7 @@
 #include <sys/cdefs.h>
 #include <sys/types.h>
 #include <dlfcn.h>
-#include <stdio.h>
+#include <unistd.h>
 
 /* Set platform binary flag */
 #define FLAG_PLATFORMIZE (1 << 1)
